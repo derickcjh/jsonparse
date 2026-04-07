@@ -2,7 +2,8 @@
 
 一款基于 Electron + React 的 macOS 桌面 JSON 编辑器，支持大数据量 JSON 的高性能解析和可视化编辑。
 
-![主界面](screenshots/main-overview.png)
+<img width="1191" height="795" alt="image" src="https://github.com/user-attachments/assets/c60ab41a-ca08-4002-ad96-1c52acf5fc8c" />
+
 
 ---
 
