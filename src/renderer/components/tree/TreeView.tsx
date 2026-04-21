@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect, useState } from 'react'
+import { useRef, useCallback, useEffect, useState, useMemo } from 'react'
 import { FixedSizeList as List } from 'react-window'
 import { useTreeData } from '../../hooks/useTreeData'
 import { useStore } from '../../store'
@@ -94,6 +94,15 @@ export function TreeView({ onTreeChange }: TreeViewProps): JSX.Element {
 
   const parsedTree = useStore((s) => s.parsedTree)
 
+  const itemSize = 28
+  const contentHeight = flatNodes.length * itemSize
+  const needsScroll = contentHeight > height
+
+  const listStyle = useMemo(() => ({
+    overflowY: needsScroll ? 'auto' : 'hidden',
+    overflowX: 'hidden'
+  } as React.CSSProperties), [needsScroll])
+
   if (!parsedTree) {
     return (
       <div className="h-full flex items-center justify-center text-gray-400 text-sm">
@@ -114,9 +123,11 @@ export function TreeView({ onTreeChange }: TreeViewProps): JSX.Element {
           ref={listRef}
           height={height}
           itemCount={flatNodes.length}
-          itemSize={28}
+          itemSize={itemSize}
           width="100%"
           overscanCount={20}
+          style={listStyle}
+          className="tree-scrollbar"
         >
           {({ index, style }) => (
             <TreeNodeComponent

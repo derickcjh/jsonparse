@@ -17,8 +17,8 @@ body {
 
 /* Custom scrollbar */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
   @apply bg-transparent;
@@ -28,6 +28,20 @@ body {
 }
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400 dark:bg-gray-500;
+}
+
+/* Tree view scrollbar - only show when needed */
+.tree-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+.tree-scrollbar::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+.tree-scrollbar::-webkit-scrollbar-thumb {
+  @apply bg-gray-200 dark:bg-gray-700 rounded-full;
+}
+.tree-scrollbar::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-300 dark:bg-gray-600;
 }
 
 /* Draggable title bar area */

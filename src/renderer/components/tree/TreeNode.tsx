@@ -1,4 +1,4 @@
-import { memo, useState, useCallback } from 'react'
+import { memo, useState, useCallback, useRef } from 'react'
 import {
   ChevronRight,
   ChevronDown,
@@ -12,6 +12,8 @@ import type { FlatNode, TreeNode as TreeNodeType } from '../../store/types'
 import { TreeNodeEditor } from './TreeNodeEditor'
 import { copyToClipboard } from '../../utils/jsonPath'
 import { treeToJson } from '../../utils/treeHelpers'
+import { ValuePopover } from './ValuePopover'
+import { ValueEditModal } from './ValueEditModal'
 
 interface TreeNodeProps {
   node: FlatNode
@@ -53,6 +55,10 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
   const [hovered, setHovered] = useState(false)
   const [copiedKey, setCopiedKey] = useState(false)
   const [copiedValue, setCopiedValue] = useState(false)
+  const [showPopover, setShowPopover] = useState(false)
+  const [popoverAnchor, setPopoverAnchor] = useState<DOMRect | null>(null)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const valueRef = useRef<HTMLSpanElement>(null)
 
   const indent = node.depth * 20
 
@@ -87,6 +93,55 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
       showCopiedTip(setCopiedValue)
     },
     [node, showCopiedTip]
+  )
+
+  // Click value to show popover for long values
+  const handleValueClick = useCallback(
+    (e: React.MouseEvent) => {
+      e.stopPropagation()
+      const valueStr = node.type === 'object' || node.type === 'array'
+        ? JSON.stringify(treeToJson(node), null, 2)
+        : String(node.value)
+      // Only show popover for values longer than 30 chars or multiline
+      if (valueStr.length > 30 || valueStr.includes('\n')) {
+        const rect = valueRef.current?.getBoundingClientRect()
+        if (rect) {
+          setPopoverAnchor(rect)
+          setShowPopover(true)
+        }
+      }
+    },
+    [node]
+  )
+
+  const getPopoverValue = useCallback(() => {
+    if (node.type === 'object' || node.type === 'array') {
+      return JSON.stringify(treeToJson(node), null, 2)
+    }
+    return String(node.value)
+  }, [node])
+
+  // Check if value is long enough to use modal editing
+  const isLongValue = useCallback(() => {
+    const valueStr = node.type === 'object' || node.type === 'array'
+      ? JSON.stringify(treeToJson(node), null, 2)
+      : String(node.value ?? '')
+    return valueStr.length > 50 || valueStr.includes('\n')
+  }, [node])
+
+  const handleEditClick = useCallback(() => {
+    if (isLongValue()) {
+      setShowEditModal(true)
+    } else {
+      setEditing(true)
+    }
+  }, [isLongValue])
+
+  const handleModalSave = useCallback(
+    (key: string | number, value: unknown, type: TreeNodeType['type']) => {
+      onEdit(node.id, key, value, type)
+    },
+    [node.id, onEdit]
   )
 
   const renderValue = (): JSX.Element | null => {
@@ -179,15 +234,38 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
 
       {!isRoot && <span className="text-gray-400 text-xs mr-1 select-none">:</span>}
 
-      {/* Value — selectable, double-click to copy full value */}
+      {/* Value — selectable, click to show popover for long values, double-click to copy */}
       <span
-        className="relative truncate flex-1 cursor-text select-text"
+        ref={valueRef}
+        className="relative truncate flex-1 cursor-pointer select-text"
+        onClick={handleValueClick}
         onDoubleClick={handleCopyValue}
-        title="双击复制 value"
+        title="点击查看完整内容，双击复制"
       >
         {renderValue()}
         <CopiedTip show={copiedValue} />
       </span>
+
+      {/* Value popover */}
+      {showPopover && popoverAnchor && (
+        <ValuePopover
+          value={getPopoverValue()}
+          type={node.type}
+          anchorRect={popoverAnchor}
+          onClose={() => setShowPopover(false)}
+        />
+      )}
+
+      {/* Value edit modal */}
+      {showEditModal && (
+        <ValueEditModal
+          nodeKey={node.key}
+          value={getPopoverValue()}
+          type={node.type}
+          onSave={handleModalSave}
+          onClose={() => setShowEditModal(false)}
+        />
+      )}
 
       {/* Action buttons */}
       {hovered && (
@@ -195,7 +273,7 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
           <button
             className="p-0.5 text-gray-400 hover:text-blue-500 rounded"
             title="编辑"
-            onClick={() => setEditing(true)}
+            onClick={handleEditClick}
           >
             <Pencil size={12} />
           </button>
