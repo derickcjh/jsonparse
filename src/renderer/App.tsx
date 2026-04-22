@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { useStore } from './store'
 import { Toolbar } from './components/Toolbar'
 import { SplitPanel } from './components/SplitPanel'
@@ -31,14 +31,96 @@ function Toast(): JSX.Element | null {
   )
 }
 
+function LoadingBar(): JSX.Element | null {
+  const isLoading = useStore((s) => s.isLoading)
+  const progress = useStore((s) => s.loadingProgress)
+
+  if (!isLoading) return null
+
+  return (
+    <div className="fixed bottom-0 left-0 right-0 h-1.5 bg-gray-200 dark:bg-gray-700 z-50">
+      <div
+        className="h-full bg-blue-500 transition-all duration-100 ease-linear"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  )
+}
+
 function App(): JSX.Element {
   const theme = useStore((s) => s.theme)
   const { parse, format, minify, validate } = useJsonWorker()
   const parseVersionRef = useRef(0)
+  const [isDragging, setIsDragging] = useState(false)
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', theme === 'dark')
   }, [theme])
+
+  const loadFileContent = useCallback(
+    async (content: string) => {
+      const store = useStore.getState()
+      store.setRawText(content, 'editor')
+      if (!content.trim()) {
+        store.setParsedTree(null)
+        store.setValidationErrors([])
+        return
+      }
+      try {
+        const result = await parse(content)
+        store.setParsedTree(result.tree)
+        store.setValidationErrors(result.errors)
+        if (result.tree && result.allIds.length <= 200) {
+          store.expandAll(result.allIds)
+        }
+        store.showToast('文件加载成功', 'success')
+      } catch {
+        store.showToast('JSON 解析失败', 'error')
+      }
+    },
+    [parse]
+  )
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(true)
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setIsDragging(false)
+  }, [])
+
+  const handleDrop = useCallback(
+    async (e: React.DragEvent) => {
+      e.preventDefault()
+      e.stopPropagation()
+      setIsDragging(false)
+
+      const files = Array.from(e.dataTransfer.files)
+      const file = files[0]
+      if (!file) return
+
+      if (file.path && window.electronAPI?.readFile) {
+        const result = await window.electronAPI.readFile(file.path)
+        if (result) {
+          loadFileContent(result.content)
+        }
+      } else {
+        const reader = new FileReader()
+        reader.onload = (event) => {
+          const content = event.target?.result as string
+          if (content) {
+            loadFileContent(content)
+          }
+        }
+        reader.readAsText(file)
+      }
+    },
+    [loadFileContent]
+  )
 
   // When editor content changes, parse it in worker
   const handleEditorChange = useCallback(
@@ -116,24 +198,38 @@ function App(): JSX.Element {
   }, [validate])
 
   return (
-    <div className="h-full flex flex-col bg-white dark:bg-gray-900">
+    <div
+      className="h-full flex flex-col bg-white dark:bg-gray-900 relative"
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
+    >
       <Toolbar onFormat={handleFormat} onMinify={handleMinify} onValidate={handleValidate} />
 
       <div className="flex-1 overflow-hidden">
         <SplitPanel
           left={<MonacoEditor onContentChange={handleEditorChange} />}
           right={
-            <div className="h-full flex flex-col">
+            <>
               <SearchBar />
-              <div className="flex-1 overflow-hidden">
-                <TreeView onTreeChange={handleTreeChange} />
-              </div>
-            </div>
+              <TreeView onTreeChange={handleTreeChange} />
+            </>
           }
         />
       </div>
 
+      {isDragging && (
+        <div className="absolute inset-0 bg-blue-500/20 border-4 border-dashed border-blue-500 z-50 flex items-center justify-center pointer-events-none">
+          <div className="bg-white dark:bg-gray-800 px-6 py-4 rounded-lg shadow-lg">
+            <p className="text-lg font-medium text-blue-600 dark:text-blue-400">
+              释放以打开文件
+            </p>
+          </div>
+        </div>
+      )}
+
       <Toast />
+      <LoadingBar />
     </div>
   )
 }

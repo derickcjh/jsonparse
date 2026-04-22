@@ -137,6 +137,10 @@ export function addJsonToTree(
 
 export function treeToJson(node: TreeNode): unknown {
   if (node.type === 'object') {
+    // Check if truncated (has value but no children)
+    if (node.children === undefined && node.value !== undefined) {
+      return node.value
+    }
     const obj: Record<string, unknown> = {}
     if (node.children) {
       for (const child of node.children) {
@@ -146,6 +150,10 @@ export function treeToJson(node: TreeNode): unknown {
     return obj
   }
   if (node.type === 'array') {
+    // Check if truncated (has value but no children)
+    if (node.children === undefined && node.value !== undefined) {
+      return node.value
+    }
     if (node.children) {
       return node.children.map((child) => treeToJson(child))
     }

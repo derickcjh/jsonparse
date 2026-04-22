@@ -18,6 +18,8 @@ import { ValueEditModal } from './ValueEditModal'
 interface TreeNodeProps {
   node: FlatNode
   style: React.CSSProperties
+  isCurrentMatch?: boolean
+  searchQuery?: string
   onToggle: (id: string) => void
   onEdit: (nodeId: string, key: string | number, value: unknown, type: TreeNodeType['type']) => void
   onDelete: (nodeId: string) => void
@@ -32,6 +34,29 @@ const valueColors: Record<string, string> = {
   null: 'text-gray-400 dark:text-gray-500'
 }
 
+// Highlight matching text within a string
+function highlightText(text: string, query: string | undefined): JSX.Element {
+  if (!query || !text) return <>{text}</>
+
+  const lowerText = text.toLowerCase()
+  const lowerQuery = query.toLowerCase()
+  const index = lowerText.indexOf(lowerQuery)
+
+  if (index === -1) return <>{text}</>
+
+  const before = text.slice(0, index)
+  const match = text.slice(index, index + query.length)
+  const after = text.slice(index + query.length)
+
+  return (
+    <>
+      {before}
+      <mark className="bg-orange-300 dark:bg-orange-600 text-inherit rounded-sm px-0.5">{match}</mark>
+      {after}
+    </>
+  )
+}
+
 function CopiedTip({ show }: { show: boolean }): JSX.Element | null {
   if (!show) return null
   return (
@@ -44,6 +69,8 @@ function CopiedTip({ show }: { show: boolean }): JSX.Element | null {
 export const TreeNodeComponent = memo(function TreeNodeComponent({
   node,
   style,
+  isCurrentMatch,
+  searchQuery,
   onToggle,
   onEdit,
   onDelete,
@@ -146,15 +173,37 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
 
   const renderValue = (): JSX.Element | null => {
     if (node.type === 'object') {
+      // Check if truncated (has value but no children)
+      if (node.children === undefined && node.value !== undefined) {
+        const count = Object.keys(node.value as Record<string, unknown>).length
+        return <span className="text-gray-400 text-xs">{`{${count} keys} ▶`}</span>
+      }
       const count = node.children?.length ?? 0
       return <span className="text-gray-400 text-xs">{`{${count} keys}`}</span>
     }
     if (node.type === 'array') {
+      // Check if truncated (has value but no children)
+      if (node.children === undefined && node.value !== undefined) {
+        const count = (node.value as unknown[]).length
+        return <span className="text-gray-400 text-xs">{`[${count} items] ▶`}</span>
+      }
       const count = node.children?.length ?? 0
       return <span className="text-gray-400 text-xs">{`[${count} items]`}</span>
     }
     const color = valueColors[node.type] || ''
-    const display = node.type === 'string' ? `"${node.value}"` : String(node.value)
+    const valueStr = node.type === 'string' ? String(node.value) : String(node.value)
+    const display = node.type === 'string' ? `"${valueStr}"` : valueStr
+
+    // Only highlight if this node is highlighted (matched)
+    if (node.highlighted && searchQuery) {
+      return (
+        <span className={`text-xs ${color}`}>
+          {node.type === 'string' ? '"' : ''}
+          {highlightText(valueStr, searchQuery)}
+          {node.type === 'string' ? '"' : ''}
+        </span>
+      )
+    }
     return <span className={`text-xs ${color}`}>{display}</span>
   }
 
@@ -199,12 +248,22 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
 
   const isRoot = node.depth === 0 && node.key === 'root'
 
+  // Determine background style
+  const getBgClass = () => {
+    if (isCurrentMatch) {
+      return 'bg-orange-200 dark:bg-orange-700/50 ring-2 ring-orange-400 dark:ring-orange-500'
+    }
+    if (node.highlighted) {
+      return 'bg-yellow-100 dark:bg-yellow-900/30'
+    }
+    return 'hover:bg-gray-100 dark:hover:bg-gray-800'
+  }
+
   return (
     <div
       style={style}
-      className={`flex items-center px-2 group
-        ${node.highlighted ? 'bg-yellow-100 dark:bg-yellow-900/30' : 'hover:bg-gray-100 dark:hover:bg-gray-800'}
-      `}
+      data-node-id={node.id}
+      className={`flex items-center px-2 group ${getBgClass()}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -228,7 +287,13 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
         onDoubleClick={isRoot ? undefined : handleCopyKey}
         title={isRoot ? undefined : `双击复制 key`}
       >
-        {isRoot ? (node.type === 'array' ? '[ ]' : '{ }') : String(node.key)}
+        {isRoot
+          ? (node.type === 'array' ? '[ ]' : '{ }')
+          : (node.highlighted && searchQuery
+              ? highlightText(String(node.key), searchQuery)
+              : String(node.key)
+            )
+        }
         <CopiedTip show={copiedKey} />
       </span>
 

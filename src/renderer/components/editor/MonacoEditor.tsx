@@ -32,13 +32,14 @@ export function MonacoEditor({ onContentChange }: MonacoEditorProps): JSX.Elemen
     [onContentChange]
   )
 
-  // Listen for external rawText updates (from tree edits, format, etc.)
+  // Listen for external rawText updates (from tree edits, format, file open, etc.)
   useEffect(() => {
     const unsub = useStore.subscribe(
       (state) => ({ rawText: state.rawText, syncSource: state.syncSource }),
       (curr, prev) => {
-        // Only update editor when change came from tree (not from editor itself)
-        if (curr.syncSource === 'tree' && curr.rawText !== prev.rawText && editorRef.current) {
+        // Update editor when change came from external source (tree, file open, etc.)
+        // Only skip when user is actively typing in the editor (no syncSource set)
+        if (curr.syncSource !== null && curr.rawText !== prev.rawText && editorRef.current) {
           isUpdatingFromExternal.current = true
           const model = editorRef.current.getModel()
           if (model) {

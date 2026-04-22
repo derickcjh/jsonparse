@@ -7,6 +7,12 @@ interface ParseResult {
   allIds: string[]
 }
 
+interface ExpandResult {
+  nodeId: string
+  children: TreeNode[]
+  childIds: string[]
+}
+
 type Resolver = {
   resolve: (value: unknown) => void
   reject: (reason: unknown) => void
@@ -70,5 +76,11 @@ export function useJsonWorker() {
     [send]
   )
 
-  return { parse, format, minify, validate }
+  const expandNode = useCallback(
+    (nodeId: string, nodeValue: unknown, nodePath: string, nodeDepth: number) =>
+      send('expandNode', '', { nodeId, nodeValue, nodePath, nodeDepth }) as Promise<ExpandResult>,
+    [send]
+  )
+
+  return { parse, format, minify, validate, expandNode }
 }

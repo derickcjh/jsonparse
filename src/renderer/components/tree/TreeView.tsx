@@ -1,6 +1,6 @@
-import { useRef, useCallback, useEffect, useState, useMemo } from 'react'
-import { FixedSizeList as List } from 'react-window'
+import { useRef, useCallback, useEffect } from 'react'
 import { useTreeData } from '../../hooks/useTreeData'
+import { useJsonWorker } from '../../hooks/useJsonWorker'
 import { useStore } from '../../store'
 import { TreeNodeComponent } from './TreeNode'
 import { updateNodeInTree, addNodeToTree, addJsonToTree, deleteNodeFromTree, treeToJson } from '../../utils/treeHelpers'
@@ -8,39 +8,71 @@ import { ChevronsDown, ChevronsUp } from 'lucide-react'
 import { IconButton } from '../common/IconButton'
 import type { TreeNode } from '../../store/types'
 
+// Find all ancestor node IDs for a given node ID
+function findAncestorIds(tree: TreeNode, targetId: string): string[] {
+  const ancestors: string[] = []
+
+  const find = (node: TreeNode, path: string[]): boolean => {
+    if (node.id === targetId) {
+      ancestors.push(...path)
+      return true
+    }
+    if (node.children) {
+      for (const child of node.children) {
+        if (find(child, [...path, node.id])) {
+          return true
+        }
+      }
+    }
+    return false
+  }
+
+  find(tree, [])
+  return ancestors
+}
+
 interface TreeViewProps {
   onTreeChange: (json: string) => void
 }
 
 export function TreeView({ onTreeChange }: TreeViewProps): JSX.Element {
-  const listRef = useRef<List>(null)
   const containerRef = useRef<HTMLDivElement>(null)
-  const [height, setHeight] = useState(400)
-  const { flatNodes, toggleNode, expandAll, collapseAll } = useTreeData()
+  const { flatNodes, toggleNode, expandAll, collapseAll, findTruncatedNode } = useTreeData()
+  const { expandNode } = useJsonWorker()
   const currentMatchIndex = useStore((s) => s.currentMatchIndex)
   const matchedIds = useStore((s) => s.matchedIds)
+  const updateNodeChildren = useStore((s) => s.updateNodeChildren)
+  const parsedTree = useStore((s) => s.parsedTree)
+  const expandedIds = useStore((s) => s.expandedIds)
+  const expandAllAction = useStore((s) => s.expandAll)
+  const searchQuery = useStore((s) => s.searchQuery)
 
-  // Scroll to current match
+  // Only pass search query when there are matches (avoid unnecessary re-renders)
+  const activeSearchQuery = matchedIds.length > 0 ? searchQuery : ''
+
+  // Scroll to current match - expand ancestors first if needed
   useEffect(() => {
-    if (currentMatchIndex < 0 || matchedIds.length === 0) return
+    if (currentMatchIndex < 0 || matchedIds.length === 0 || !containerRef.current || !parsedTree) return
+
     const targetId = matchedIds[currentMatchIndex]
-    const index = flatNodes.findIndex((n) => n.id === targetId)
-    if (index >= 0) {
-      listRef.current?.scrollToItem(index, 'center')
-    }
-  }, [currentMatchIndex, matchedIds, flatNodes])
 
-  // Resize observer
-  useEffect(() => {
-    if (!containerRef.current) return
-    const observer = new ResizeObserver((entries) => {
-      for (const entry of entries) {
-        setHeight(entry.contentRect.height)
+    // Find and expand all ancestor nodes
+    const ancestorIds = findAncestorIds(parsedTree, targetId)
+    const collapsedAncestors = ancestorIds.filter(id => !expandedIds.has(id))
+
+    if (collapsedAncestors.length > 0) {
+      // Expand collapsed ancestors
+      expandAllAction([...Array.from(expandedIds), ...collapsedAncestors])
+    }
+
+    // Wait for DOM to update, then scroll
+    requestAnimationFrame(() => {
+      const targetElement = containerRef.current?.querySelector(`[data-node-id="${targetId}"]`)
+      if (targetElement) {
+        targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
       }
     })
-    observer.observe(containerRef.current)
-    return () => observer.disconnect()
-  }, [])
+  }, [currentMatchIndex, matchedIds, parsedTree, expandedIds, expandAllAction])
 
   const syncTreeToEditor = useCallback(
     (newTree: TreeNode | null) => {
@@ -92,55 +124,65 @@ export function TreeView({ onTreeChange }: TreeViewProps): JSX.Element {
     [syncTreeToEditor]
   )
 
-  const parsedTree = useStore((s) => s.parsedTree)
+  const handleToggle = useCallback(
+    async (id: string) => {
+      const truncatedNode = findTruncatedNode(id)
+      if (truncatedNode) {
+        const result = await expandNode(
+          truncatedNode.id,
+          truncatedNode.value,
+          truncatedNode.path,
+          truncatedNode.depth
+        )
+        updateNodeChildren(result.nodeId, result.children, result.childIds)
+      } else {
+        toggleNode(id)
+      }
+    },
+    [findTruncatedNode, expandNode, updateNodeChildren, toggleNode]
+  )
 
   const itemSize = 28
-  const contentHeight = flatNodes.length * itemSize
-  const needsScroll = contentHeight > height
-
-  const listStyle = useMemo(() => ({
-    overflowY: needsScroll ? 'auto' : 'hidden',
-    overflowX: 'hidden'
-  } as React.CSSProperties), [needsScroll])
 
   if (!parsedTree) {
     return (
-      <div className="h-full flex items-center justify-center text-gray-400 text-sm">
-        输入有效的 JSON 以查看树形视图
+      <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
+          <span className="text-xs text-gray-500 dark:text-gray-400 mr-auto">树形视图</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+          输入有效的 JSON 以查看树形视图
+        </div>
       </div>
     )
   }
 
+  const currentMatchId = currentMatchIndex >= 0 && matchedIds.length > 0
+    ? matchedIds[currentMatchIndex]
+    : null
+
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+    <div className="flex-1 flex flex-col min-h-0">
+      <div className="flex items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
         <span className="text-xs text-gray-500 dark:text-gray-400 mr-auto">树形视图</span>
         <IconButton icon={<ChevronsDown size={14} />} label="展开全部" onClick={expandAll} />
         <IconButton icon={<ChevronsUp size={14} />} label="折叠全部" onClick={collapseAll} />
       </div>
-      <div ref={containerRef} className="flex-1 overflow-hidden">
-        <List
-          ref={listRef}
-          height={height}
-          itemCount={flatNodes.length}
-          itemSize={itemSize}
-          width="100%"
-          overscanCount={20}
-          style={listStyle}
-          className="tree-scrollbar"
-        >
-          {({ index, style }) => (
-            <TreeNodeComponent
-              node={flatNodes[index]}
-              style={style}
-              onToggle={toggleNode}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-              onAdd={handleAdd}
-              onAddJson={handleAddJson}
-            />
-          )}
-        </List>
+      <div ref={containerRef} className="flex-1 min-h-0 overflow-y-auto">
+        {flatNodes.map((node) => (
+          <TreeNodeComponent
+            key={node.id}
+            node={node}
+            style={{ height: itemSize }}
+            isCurrentMatch={node.id === currentMatchId}
+            searchQuery={activeSearchQuery}
+            onToggle={handleToggle}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+            onAdd={handleAdd}
+            onAddJson={handleAddJson}
+          />
+        ))}
       </div>
     </div>
   )

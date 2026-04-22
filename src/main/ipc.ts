@@ -7,12 +7,25 @@ export function registerIpcHandlers(): void {
   ipcMain.handle(IPC_CHANNELS.FILE_OPEN, async (event) => {
     const win = BrowserWindow.fromWebContents(event.sender)
     const result = await dialog.showOpenDialog(win!, {
-      filters: [{ name: 'JSON', extensions: ['json'] }],
+      filters: [
+        { name: 'JSON Files', extensions: ['json'] },
+        { name: 'Text Files', extensions: ['txt'] },
+        { name: 'All Files', extensions: ['*'] }
+      ],
       properties: ['openFile']
     })
     if (result.canceled || result.filePaths.length === 0) return null
     const content = await readFile(result.filePaths[0], 'utf-8')
     return { path: result.filePaths[0], content }
+  })
+
+  ipcMain.handle(IPC_CHANNELS.FILE_READ, async (_event, filePath: string) => {
+    try {
+      const content = await readFile(filePath, 'utf-8')
+      return { path: filePath, content }
+    } catch {
+      return null
+    }
   })
 
   ipcMain.handle(IPC_CHANNELS.FILE_SAVE, async (event, content: string) => {

@@ -17,6 +17,9 @@ export const createUiSlice: StateCreator<StoreState, [['zustand/subscribeWithSel
   currentMatchIndex: -1,
   toastMessage: null,
   toastType: null,
+  isLoading: false,
+  loadingMessage: null,
+  loadingProgress: 0,
 
   toggleTheme: () =>
     set((state) => ({ theme: state.theme === 'dark' ? 'light' : 'dark' })),
@@ -43,5 +46,7 @@ export const createUiSlice: StateCreator<StoreState, [['zustand/subscribeWithSel
     }),
 
   showToast: (message, type) => set({ toastMessage: message, toastType: type }),
-  clearToast: () => set({ toastMessage: null, toastType: null })
+  clearToast: () => set({ toastMessage: null, toastType: null }),
+  setLoading: (isLoading, message) => set({ isLoading, loadingMessage: message || null, loadingProgress: isLoading ? 0 : 0 }),
+  setLoadingProgress: (progress) => set({ loadingProgress: progress })
 })

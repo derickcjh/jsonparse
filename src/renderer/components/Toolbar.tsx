@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { IconButton } from './common/IconButton'
 import { useStore } from '../store'
+import { useJsonWorker } from '../hooks/useJsonWorker'
 
 interface ToolbarProps {
   onFormat: () => void
@@ -21,12 +22,65 @@ interface ToolbarProps {
 export function Toolbar({ onFormat, onMinify, onValidate }: ToolbarProps): JSX.Element {
   const theme = useStore((s) => s.theme)
   const toggleTheme = useStore((s) => s.toggleTheme)
-  const setRawText = useStore((s) => s.setRawText)
+  const { parse } = useJsonWorker()
 
   const handleOpen = async (): Promise<void> => {
     const result = await window.electronAPI?.openFile()
     if (result) {
-      setRawText(result.content, 'editor')
+      const store = useStore.getState()
+      const fileSize = (result.content.length / 1024 / 1024).toFixed(2)
+
+      // Show progress bar immediately with initial value
+      store.setLoading(true, `正在解析文件 (${fileSize} MB)...`)
+      store.setLoadingProgress(5)
+
+      // Wait for UI to render the progress bar
+      await new Promise(resolve => setTimeout(resolve, 16))
+      store.setLoadingProgress(15)
+      await new Promise(resolve => setTimeout(resolve, 16))
+      store.setLoadingProgress(25)
+      await new Promise(resolve => setTimeout(resolve, 16))
+
+      // Start smooth animation
+      let progress = 25
+      let targetProgress = 80
+      const progressInterval = setInterval(() => {
+        progress += (targetProgress - progress) * 0.12
+        store.setLoadingProgress(Math.min(Math.round(progress), targetProgress))
+        if (progress >= 99.5) {
+          clearInterval(progressInterval)
+          store.setLoadingProgress(100)
+          setTimeout(() => store.setLoading(false), 150)
+        }
+      }, 25)
+
+      store.setRawText(result.content, 'tree')
+
+      if (result.content.trim()) {
+        try {
+          // Measure only the actual parsing time
+          const startTime = performance.now()
+          const parsed = await parse(result.content)
+          const parseTime = (performance.now() - startTime).toFixed(0)
+
+          store.setParsedTree(parsed.tree)
+          store.setValidationErrors(parsed.errors)
+          if (parsed.tree && parsed.allIds.length <= 200) {
+            store.expandAll(parsed.allIds)
+          }
+
+          // Parsing done - animate to 100%
+          targetProgress = 100
+          store.showToast(`文件加载成功，解析耗时 ${parseTime}ms`, 'success')
+        } catch {
+          clearInterval(progressInterval)
+          store.setLoading(false)
+          store.showToast('JSON 解析失败', 'error')
+        }
+      } else {
+        clearInterval(progressInterval)
+        store.setLoading(false)
+      }
     }
   }
 

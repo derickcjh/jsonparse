@@ -1,13 +1,20 @@
-import { useMemo } from 'react'
+import { useMemo, useCallback } from 'react'
 import { useStore } from '../store'
 import type { TreeNode, FlatNode } from '../store/types'
+
+function isTruncatedNode(node: TreeNode): boolean {
+  return (node.type === 'object' || node.type === 'array') &&
+         node.children === undefined &&
+         node.value !== undefined
+}
 
 function flattenTree(
   node: TreeNode,
   expandedIds: Set<string>,
   matchedIds: Set<string>
 ): FlatNode[] {
-  const hasChildren = !!(node.children && node.children.length > 0)
+  const isTruncated = isTruncatedNode(node)
+  const hasChildren = !!(node.children && node.children.length > 0) || isTruncated
   const expanded = expandedIds.has(node.id)
   const highlighted = matchedIds.has(node.id)
 
@@ -27,6 +34,7 @@ export function useTreeData(): {
   toggleNode: (id: string) => void
   expandAll: () => void
   collapseAll: () => void
+  findTruncatedNode: (id: string) => TreeNode | null
 } {
   const parsedTree = useStore((s) => s.parsedTree)
   const expandedIds = useStore((s) => s.expandedIds)
@@ -47,9 +55,9 @@ export function useTreeData(): {
       if (!parsedTree) return
       const allIds: string[] = []
       const collect = (node: TreeNode): void => {
-        if (node.children && node.children.length > 0) {
+        if ((node.children && node.children.length > 0) || isTruncatedNode(node)) {
           allIds.push(node.id)
-          node.children.forEach(collect)
+          node.children?.forEach(collect)
         }
       }
       collect(parsedTree)
@@ -57,10 +65,28 @@ export function useTreeData(): {
     }
   }, [parsedTree, expandAllAction])
 
+  const findTruncatedNode = useCallback((id: string): TreeNode | null => {
+    if (!parsedTree) return null
+    const find = (node: TreeNode): TreeNode | null => {
+      if (node.id === id && isTruncatedNode(node)) {
+        return node
+      }
+      if (node.children) {
+        for (const child of node.children) {
+          const found = find(child)
+          if (found) return found
+        }
+      }
+      return null
+    }
+    return find(parsedTree)
+  }, [parsedTree])
+
   return {
     flatNodes,
     toggleNode: toggleExpanded,
     expandAll,
-    collapseAll: collapseAllAction
+    collapseAll: collapseAllAction,
+    findTruncatedNode
   }
 }

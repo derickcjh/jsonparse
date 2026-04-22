@@ -41,6 +41,7 @@ export interface JsonSlice {
   expandAll: (ids: string[]) => void
   collapseAll: () => void
   setSyncSource: (source: 'editor' | 'tree' | null) => void
+  updateNodeChildren: (nodeId: string, children: TreeNode[], childIds: string[]) => void
 }
 
 export interface UiSlice {
@@ -51,6 +52,9 @@ export interface UiSlice {
   currentMatchIndex: number
   toastMessage: string | null
   toastType: 'success' | 'error' | null
+  isLoading: boolean
+  loadingMessage: string | null
+  loadingProgress: number
 
   toggleTheme: () => void
   setSearchQuery: (query: string) => void
@@ -59,6 +63,8 @@ export interface UiSlice {
   navigateMatch: (direction: 'next' | 'prev') => void
   showToast: (message: string, type: 'success' | 'error') => void
   clearToast: () => void
+  setLoading: (isLoading: boolean, message?: string) => void
+  setLoadingProgress: (progress: number) => void
 }
 
 export type StoreState = JsonSlice & UiSlice
