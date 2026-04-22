@@ -15,7 +15,8 @@ function flattenTree(
 ): FlatNode[] {
   const isTruncated = isTruncatedNode(node)
   const hasChildren = !!(node.children && node.children.length > 0) || isTruncated
-  const expanded = expandedIds.has(node.id)
+  // Truncated nodes should show collapsed arrow until children are loaded
+  const expanded = isTruncated ? false : expandedIds.has(node.id)
   const highlighted = matchedIds.has(node.id)
 
   const flat: FlatNode[] = [{ ...node, hasChildren, expanded, highlighted }]

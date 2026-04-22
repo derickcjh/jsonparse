@@ -38,15 +38,17 @@ function getType(value: unknown): TreeNode['type'] {
 }
 
 let nodeCounter = 0
+let expandCounter = 0
 
 function buildTree(
   key: string | number,
   value: unknown,
   depth: number,
   parentPath: string,
-  maxDepth: number
+  maxDepth: number,
+  idPrefix = 'node'
 ): TreeNode {
-  const id = `node_${nodeCounter++}`
+  const id = `${idPrefix}_${nodeCounter++}`
   const path = parentPath ? (typeof key === 'number' ? `${parentPath}[${key}]` : `${parentPath}.${key}`) : '$'
   const type = getType(value)
 
@@ -58,7 +60,7 @@ function buildTree(
   if (type === 'object' && value !== null) {
     if (depth < maxDepth) {
       node.children = Object.entries(value as Record<string, unknown>).map(([k, v]) =>
-        buildTree(k, v, depth + 1, path, maxDepth)
+        buildTree(k, v, depth + 1, path, maxDepth, idPrefix)
       )
     } else {
       // Store raw value for lazy expansion, mark as truncated
@@ -71,7 +73,7 @@ function buildTree(
   } else if (type === 'array') {
     if (depth < maxDepth) {
       node.children = (value as unknown[]).map((item, i) =>
-        buildTree(i, item, depth + 1, path, maxDepth)
+        buildTree(i, item, depth + 1, path, maxDepth, idPrefix)
       )
     } else {
       node.value = value
@@ -171,16 +173,19 @@ function expandNode(nodeId: string, nodeValue: unknown, nodePath: string, nodeDe
   const type = getType(nodeValue)
   const children: TreeNode[] = []
 
+  // Use unique prefix for expanded nodes to avoid ID conflicts
+  const idPrefix = `exp_${expandCounter++}`
+
   // Expand one more level (depth + 2 to allow expanding children)
   const expansionDepth = 2
 
   if (type === 'object' && nodeValue !== null) {
     Object.entries(nodeValue as Record<string, unknown>).forEach(([k, v]) => {
-      children.push(buildTree(k, v, nodeDepth + 1, nodePath, nodeDepth + 1 + expansionDepth))
+      children.push(buildTree(k, v, nodeDepth + 1, nodePath, nodeDepth + 1 + expansionDepth, idPrefix))
     })
   } else if (type === 'array') {
     (nodeValue as unknown[]).forEach((item, i) => {
-      children.push(buildTree(i, item, nodeDepth + 1, nodePath, nodeDepth + 1 + expansionDepth))
+      children.push(buildTree(i, item, nodeDepth + 1, nodePath, nodeDepth + 1 + expansionDepth, idPrefix))
     })
   }
 

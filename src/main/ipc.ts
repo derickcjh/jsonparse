@@ -8,9 +8,9 @@ export function registerIpcHandlers(): void {
     const win = BrowserWindow.fromWebContents(event.sender)
     const result = await dialog.showOpenDialog(win!, {
       filters: [
+        { name: 'All Files', extensions: ['*'] },
         { name: 'JSON Files', extensions: ['json'] },
-        { name: 'Text Files', extensions: ['txt'] },
-        { name: 'All Files', extensions: ['*'] }
+        { name: 'Text Files', extensions: ['txt'] }
       ],
       properties: ['openFile']
     })

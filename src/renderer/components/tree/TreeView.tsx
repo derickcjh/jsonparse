@@ -37,7 +37,7 @@ interface TreeViewProps {
 
 export function TreeView({ onTreeChange }: TreeViewProps): JSX.Element {
   const containerRef = useRef<HTMLDivElement>(null)
-  const { flatNodes, toggleNode, expandAll, collapseAll, findTruncatedNode } = useTreeData()
+  const { flatNodes, toggleNode, expandAll, collapseAll } = useTreeData()
   const { expandNode } = useJsonWorker()
   const currentMatchIndex = useStore((s) => s.currentMatchIndex)
   const matchedIds = useStore((s) => s.matchedIds)
@@ -126,7 +126,26 @@ export function TreeView({ onTreeChange }: TreeViewProps): JSX.Element {
 
   const handleToggle = useCallback(
     async (id: string) => {
-      const truncatedNode = findTruncatedNode(id)
+      // Get the latest parsedTree from store to avoid stale closure
+      const currentTree = useStore.getState().parsedTree
+      if (!currentTree) return
+
+      // Check if node is truncated using current tree state
+      const findTruncated = (node: TreeNode): TreeNode | null => {
+        const isTruncated = (node.type === 'object' || node.type === 'array') &&
+                           node.children === undefined &&
+                           node.value !== undefined
+        if (node.id === id && isTruncated) return node
+        if (node.children) {
+          for (const child of node.children) {
+            const found = findTruncated(child)
+            if (found) return found
+          }
+        }
+        return null
+      }
+
+      const truncatedNode = findTruncated(currentTree)
       if (truncatedNode) {
         const result = await expandNode(
           truncatedNode.id,
@@ -139,7 +158,7 @@ export function TreeView({ onTreeChange }: TreeViewProps): JSX.Element {
         toggleNode(id)
       }
     },
-    [findTruncatedNode, expandNode, updateNodeChildren, toggleNode]
+    [expandNode, updateNodeChildren, toggleNode]
   )
 
   const itemSize = 28
