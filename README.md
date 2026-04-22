@@ -4,7 +4,7 @@
 
 ![JSON Parse Screenshot](resources/icon.png)
 
-<img width="1191" height="795" alt="JSON Parse Main Interface" src="https://github.com/user-attachments/assets/c60ab41a-ca08-4002-ad96-1c52acf5fc8c" />
+<img width="119" height="79" alt="JSON Parse Main Interface" src="https://github.com/user-attachments/assets/c60ab41a-ca08-4002-ad96-1c52acf5fc8c" />
 
 ---
 
