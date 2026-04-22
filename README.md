@@ -2,8 +2,9 @@
 
 一款基于 Electron + React 的 macOS 桌面 JSON 编辑器，支持大数据量 JSON 的高性能解析和可视化编辑。
 
-<img width="1191" height="795" alt="image" src="https://github.com/user-attachments/assets/c60ab41a-ca08-4002-ad96-1c52acf5fc8c" />
+![JSON Parse Screenshot](resources/icon.png)
 
+<img width="1191" height="795" alt="JSON Parse Main Interface" src="https://github.com/user-attachments/assets/c60ab41a-ca08-4002-ad96-1c52acf5fc8c" />
 
 ---
 
@@ -25,8 +26,9 @@
 
 - **展开/折叠** — 点击箭头展开或折叠节点
 - **展开全部/折叠全部** — 树形视图顶部按钮一键操作
-- **节点类型着色** — 字符串(绿色)、数字(蓝色)、布尔(橙色)、null(灰色)
-- **子节点计数** — 对象显示 `{N keys}`，数组显示 `[N items]`
+- **节点类型着色** — 字符串(绿色)、数字(橙色)、布尔(琥珀色)、null(青色)、key(紫色)
+- **子节点计数** — 对象显示 `{ N }`，数组显示 `[ N ]`
+- **懒加载** — 大文件自动截断深层节点，点击展开时按需加载
 
 ### 3. 节点增删改
 
@@ -49,7 +51,7 @@
 | 操作 | 说明 |
 |------|------|
 | 鼠标选中 + Cmd+C | 自由选中 key 或 value 文本进行复制 |
-| 双击 key | 复制 key 名称，显示 "copied" 提示 |
+| 双击 key | 复制 key 名称，显示 "Copied!" 提示 |
 | 双击 value | 复制 value 值（对象/数组会复制格式化后的 JSON） |
 | 悬浮 → 复制路径按钮 | 复制 JSON Path（如 `$.data[0].name`） |
 | 悬浮 → 复制 key:value 按钮 | 复制完整的 `"key": value` 格式 |
@@ -65,16 +67,22 @@
 右侧面板顶部搜索栏：
 
 - 输入关键词实时搜索 key 和 value
-- 匹配节点黄色高亮
-- `Enter` / `Shift+Enter` 在匹配结果间跳转
+- 匹配节点高亮显示，当前匹配项突出标记
+- `Enter` / `Shift+Enter` 在匹配结果间跳转，自动展开父节点
 - 支持**区分大小写**和**正则表达式**模式切换
+- 显示当前匹配位置（如 `3 / 15`）
 
 ### 7. 暗色 / 亮色主题
-工具栏右侧的太阳/月亮图标一键切换，默认跟随系统偏好。
+工具栏右侧的太阳/月亮图标一键切换。
+
+- **亮色主题** — 清爽的浅灰渐变背景
+- **暗色主题** — 深邃的深蓝灰渐变背景，护眼舒适
 
 ### 8. 文件操作
-- **打开文件** — 工具栏文件夹图标，打开本地 `.json` 文件
+- **打开文件** — 工具栏文件夹图标，支持打开任意文件（默认 All Files）
+- **拖拽打开** — 直接拖拽文件到窗口打开
 - **保存文件** — 工具栏保存图标，导出为 `.json` 文件
+- **加载进度条** — 大文件解析时底部显示进度
 
 ### 9. 多窗口支持
 - **Cmd+N** 快捷键新建窗口
@@ -84,9 +92,22 @@
 
 ### 10. 大数据量优化
 - **Web Worker** — JSON 解析/格式化/搜索全部在后台线程执行，不阻塞 UI
-- **延迟解析** — 超过 1MB 的文件只解析前 2 层，展开时按需加载子树
-- **虚拟列表** — react-window 仅渲染可见行，10 万+ 节点依然流畅
-- **防抖同步** — 编辑器输入 300ms 防抖后再解析
+- **延迟解析** — 超过 1MB 的文件只解析前几层，展开时按需加载子树
+- **虚拟列表** — 仅渲染可见行，10 万+ 节点依然流畅
+- **防抖同步** — 编辑器输入防抖后再解析
+- **进度反馈** — 大文件加载时显示解析进度和耗时
+
+---
+
+## 界面设计
+
+v1.2.0 采用现代化开发工具风格设计：
+
+- **配色系统** — 深蓝灰色调搭配蓝色强调色
+- **玻璃拟态** — 工具栏和面板使用毛玻璃效果
+- **等宽字体** — JetBrains Mono 用于代码显示
+- **平滑动画** — 过渡效果和微交互动画
+- **JSON 语法色** — 紫色 key、绿色 string、橙色 number、琥珀色 boolean、青色 null
 
 ---
 
@@ -108,10 +129,11 @@
 | React 18 | UI 框架 |
 | TypeScript 5 | 类型安全 |
 | Monaco Editor | 代码编辑器 |
-| react-window | 虚拟化列表 |
 | Zustand | 状态管理 |
-| Immer | 不可变数据更新 |
-| Tailwind CSS 3 | 样式 |
+| Tailwind CSS 3 | 样式系统 |
+| Allotment | 可调整分割面板 |
+| Lucide React | 图标库 |
+| Sharp | 图标生成 |
 | electron-vite | 构建工具 |
 | electron-builder | 打包工具 |
 
@@ -159,6 +181,14 @@ npm run package
 
 打包产物位于 `dist/` 目录。
 
+### 6. 生成应用图标（可选）
+
+```bash
+node scripts/generate-icons.js
+```
+
+从 SVG 源文件生成各尺寸 PNG 和 macOS icns 图标。
+
 ---
 
 ## 项目结构
@@ -173,17 +203,22 @@ src/
 │   └── index.ts         # contextBridge 安全 API
 ├── renderer/            # React 渲染进程
 │   ├── App.tsx          # 根组件
+│   ├── index.css        # 全局样式
 │   ├── components/      # UI 组件
 │   │   ├── Toolbar.tsx
 │   │   ├── SearchBar.tsx
 │   │   ├── SplitPanel.tsx
-│   │   ├── editor/MonacoEditor.tsx
+│   │   ├── common/      # 通用组件
+│   │   ├── editor/      # Monaco 编辑器
 │   │   └── tree/        # 树形视图组件
 │   ├── store/           # Zustand 状态管理
 │   ├── workers/         # Web Worker（JSON 解析、搜索）
 │   ├── hooks/           # 自定义 Hooks
 │   └── utils/           # 工具函数
-└── shared/              # 跨进程共享常量
+├── shared/              # 跨进程共享常量
+assets/                  # 源图标文件
+resources/               # 构建资源（图标）
+scripts/                 # 构建脚本
 ```
 
 ---
@@ -201,6 +236,29 @@ src/
 | Shift+Enter | 搜索上一个匹配 |
 | Cmd+Enter | JSON 文本模式下保存 |
 | Escape | 取消编辑 |
+
+---
+
+## 版本历史
+
+### v1.2.0
+- 全新现代化 UI 设计
+- 新应用图标
+- 玻璃拟态效果
+- JetBrains Mono 字体
+
+### v1.1.1
+- 修复文件打开对话框默认选项
+- 修复截断节点箭头显示
+- 修复展开/折叠功能
+
+### v1.1.0
+- 加载进度条
+- 搜索结果跳转和高亮
+- 性能优化
+
+### v1.0.0
+- 初始版本
 
 ---
 
