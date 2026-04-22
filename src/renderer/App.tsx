@@ -22,11 +22,27 @@ function Toast(): JSX.Element | null {
 
   return (
     <div
-      className={`fixed bottom-4 right-4 px-4 py-2 rounded-lg shadow-lg text-sm text-white z-50 ${
-        type === 'success' ? 'bg-green-500' : 'bg-red-500'
-      }`}
+      className={`
+        fixed bottom-6 right-6 px-5 py-3 rounded-xl text-sm font-medium z-50
+        animate-slide-up backdrop-blur-md shadow-lg
+        ${type === 'success'
+          ? 'bg-emerald-500/90 text-white shadow-emerald-500/20'
+          : 'bg-red-500/90 text-white shadow-red-500/20'
+        }
+      `}
     >
-      {message}
+      <div className="flex items-center gap-2">
+        {type === 'success' ? (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+        ) : (
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        )}
+        {message}
+      </div>
     </div>
   )
 }
@@ -38,11 +54,13 @@ function LoadingBar(): JSX.Element | null {
   if (!isLoading) return null
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 h-1.5 bg-gray-200 dark:bg-gray-700 z-50">
+    <div className="fixed bottom-0 left-0 right-0 h-1 bg-slate-200/50 dark:bg-slate-800/50 z-50 overflow-hidden">
       <div
-        className="h-full bg-blue-500 transition-all duration-100 ease-linear"
+        className="h-full bg-gradient-to-r from-accent via-accent-light to-accent transition-all duration-150 ease-out relative"
         style={{ width: `${progress}%` }}
-      />
+      >
+        <div className="absolute inset-0 bg-white/30 animate-pulse" />
+      </div>
     </div>
   )
 }
@@ -199,7 +217,7 @@ function App(): JSX.Element {
 
   return (
     <div
-      className="h-full flex flex-col bg-white dark:bg-gray-900 relative"
+      className="h-full flex flex-col relative overflow-hidden"
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
@@ -210,20 +228,32 @@ function App(): JSX.Element {
         <SplitPanel
           left={<MonacoEditor onContentChange={handleEditorChange} />}
           right={
-            <>
+            <div className="h-full flex flex-col bg-white/50 dark:bg-void-50/50">
               <SearchBar />
               <TreeView onTreeChange={handleTreeChange} />
-            </>
+            </div>
           }
         />
       </div>
 
       {isDragging && (
-        <div className="absolute inset-0 bg-blue-500/20 border-4 border-dashed border-blue-500 z-50 flex items-center justify-center pointer-events-none">
-          <div className="bg-white dark:bg-gray-800 px-6 py-4 rounded-lg shadow-lg">
-            <p className="text-lg font-medium text-blue-600 dark:text-blue-400">
-              释放以打开文件
-            </p>
+        <div className="absolute inset-0 bg-accent/10 backdrop-blur-sm z-50 flex items-center justify-center animate-fade-in">
+          <div className="bg-white dark:bg-void-100 px-8 py-6 rounded-2xl shadow-2xl border border-accent/20 glow-border">
+            <div className="flex items-center gap-3">
+              <div className="w-12 h-12 rounded-xl bg-accent/10 flex items-center justify-center">
+                <svg className="w-6 h-6 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-lg font-semibold text-slate-800 dark:text-white">
+                  释放以打开文件
+                </p>
+                <p className="text-sm text-slate-500 dark:text-slate-400">
+                  支持 JSON、文本文件
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       )}

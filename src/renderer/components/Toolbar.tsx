@@ -90,13 +90,16 @@ export function Toolbar({ onFormat, onMinify, onValidate }: ToolbarProps): JSX.E
   }
 
   return (
-    <div className="titlebar-drag flex items-center gap-1 h-10 px-20 bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-      <div className="titlebar-no-drag flex items-center gap-1">
+    <div className="titlebar-drag flex items-center gap-1 h-12 px-20 bg-white/80 dark:bg-void-50/80 backdrop-blur-md border-b border-slate-200/80 dark:border-slate-700/50 relative z-10">
+      {/* Subtle top highlight */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent" />
+
+      <div className="titlebar-no-drag flex items-center gap-0.5">
         <IconButton icon={<AppWindow size={16} />} label="新建窗口" onClick={() => window.electronAPI?.newWindow()} />
         <IconButton icon={<FolderOpen size={16} />} label="打开文件" onClick={handleOpen} />
         <IconButton icon={<Save size={16} />} label="保存文件" onClick={handleSave} />
 
-        <div className="w-px h-5 bg-gray-300 dark:bg-gray-600 mx-1" />
+        <div className="w-px h-5 bg-slate-300/50 dark:bg-slate-600/50 mx-2" />
 
         <IconButton icon={<Braces size={16} />} label="格式化" onClick={onFormat} />
         <IconButton icon={<Minimize2 size={16} />} label="压缩" onClick={onMinify} />
@@ -105,10 +108,12 @@ export function Toolbar({ onFormat, onMinify, onValidate }: ToolbarProps): JSX.E
 
       <div className="flex-1 titlebar-drag" />
 
-      <span className="text-xs font-medium text-gray-500 dark:text-gray-400 titlebar-no-drag select-none">
-        <FileJson size={14} className="inline mr-1" />
-        JSON Parse
-      </span>
+      <div className="titlebar-no-drag flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-100/80 dark:bg-slate-800/50">
+        <FileJson size={14} className="text-accent" />
+        <span className="text-xs font-semibold text-slate-600 dark:text-slate-300 tracking-wide">
+          JSON Parse
+        </span>
+      </div>
 
       <div className="flex-1 titlebar-drag" />
 

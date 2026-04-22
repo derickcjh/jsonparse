@@ -12,17 +12,21 @@ export function IconButton({ icon, label, active, className = '', ...props }: Ic
       title={label}
       aria-label={label}
       className={`
-        p-1.5 rounded-md transition-colors
+        relative p-2 rounded-lg transition-all duration-200 ease-out
         ${active
-          ? 'bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400'
-          : 'text-gray-500 hover:bg-gray-200 hover:text-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-gray-200'
+          ? 'bg-accent/15 text-accent shadow-sm'
+          : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800/60 hover:text-slate-700 dark:hover:text-slate-200'
         }
-        disabled:opacity-40 disabled:cursor-not-allowed
+        disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:bg-transparent
+        active:scale-95
         ${className}
       `}
       {...props}
     >
       {icon}
+      {active && (
+        <span className="absolute inset-0 rounded-lg ring-1 ring-accent/30" />
+      )}
     </button>
   )
 }

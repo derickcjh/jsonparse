@@ -28,10 +28,10 @@ interface TreeNodeProps {
 }
 
 const valueColors: Record<string, string> = {
-  string: 'text-green-600 dark:text-green-400',
-  number: 'text-blue-600 dark:text-blue-400',
+  string: 'text-emerald-600 dark:text-emerald-400',
+  number: 'text-orange-500 dark:text-orange-400',
   boolean: 'text-amber-600 dark:text-amber-400',
-  null: 'text-gray-400 dark:text-gray-500'
+  null: 'text-cyan-500 dark:text-cyan-400'
 }
 
 // Highlight matching text within a string
@@ -51,7 +51,7 @@ function highlightText(text: string, query: string | undefined): JSX.Element {
   return (
     <>
       {before}
-      <mark className="bg-orange-300 dark:bg-orange-600 text-inherit rounded-sm px-0.5">{match}</mark>
+      <mark className="bg-amber-300/80 dark:bg-amber-500/40 text-inherit rounded px-0.5 -mx-0.5">{match}</mark>
       {after}
     </>
   )
@@ -60,8 +60,8 @@ function highlightText(text: string, query: string | undefined): JSX.Element {
 function CopiedTip({ show }: { show: boolean }): JSX.Element | null {
   if (!show) return null
   return (
-    <span className="absolute -top-5 left-1/2 -translate-x-1/2 px-1.5 py-0.5 text-[10px] bg-gray-800 text-white rounded shadow whitespace-nowrap z-50 pointer-events-none">
-      copied
+    <span className="absolute -top-6 left-1/2 -translate-x-1/2 px-2 py-1 text-[10px] font-medium bg-slate-800 dark:bg-slate-700 text-white rounded-md shadow-lg whitespace-nowrap z-50 pointer-events-none animate-fade-in">
+      Copied!
     </span>
   )
 }
@@ -87,7 +87,7 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
   const [showEditModal, setShowEditModal] = useState(false)
   const valueRef = useRef<HTMLSpanElement>(null)
 
-  const indent = node.depth * 20
+  const indent = node.depth * 16
 
   const showCopiedTip = useCallback((setter: (v: boolean) => void) => {
     setter(true)
@@ -176,19 +176,19 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
       // Check if truncated (has value but no children)
       if (node.children === undefined && node.value !== undefined) {
         const count = Object.keys(node.value as Record<string, unknown>).length
-        return <span className="text-gray-400 text-xs">{`{${count} keys} ▶`}</span>
+        return <span className="text-slate-400 dark:text-slate-500 text-xs font-mono">{`{ ${count} }`} <span className="text-accent/60">...</span></span>
       }
       const count = node.children?.length ?? 0
-      return <span className="text-gray-400 text-xs">{`{${count} keys}`}</span>
+      return <span className="text-slate-400 dark:text-slate-500 text-xs font-mono">{`{ ${count} }`}</span>
     }
     if (node.type === 'array') {
       // Check if truncated (has value but no children)
       if (node.children === undefined && node.value !== undefined) {
         const count = (node.value as unknown[]).length
-        return <span className="text-gray-400 text-xs">{`[${count} items] ▶`}</span>
+        return <span className="text-slate-400 dark:text-slate-500 text-xs font-mono">{`[ ${count} ]`} <span className="text-accent/60">...</span></span>
       }
       const count = node.children?.length ?? 0
-      return <span className="text-gray-400 text-xs">{`[${count} items]`}</span>
+      return <span className="text-slate-400 dark:text-slate-500 text-xs font-mono">{`[ ${count} ]`}</span>
     }
     const color = valueColors[node.type] || ''
     const valueStr = node.type === 'string' ? String(node.value) : String(node.value)
@@ -197,14 +197,14 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
     // Only highlight if this node is highlighted (matched)
     if (node.highlighted && searchQuery) {
       return (
-        <span className={`text-xs ${color}`}>
+        <span className={`text-xs font-mono ${color}`}>
           {node.type === 'string' ? '"' : ''}
           {highlightText(valueStr, searchQuery)}
           {node.type === 'string' ? '"' : ''}
         </span>
       )
     }
-    return <span className={`text-xs ${color}`}>{display}</span>
+    return <span className={`text-xs font-mono ${color}`}>{display}</span>
   }
 
   if (editing) {
@@ -226,7 +226,7 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
     return (
       <div style={{ ...style, overflow: 'visible', zIndex: 20, position: 'relative' }}>
         <div style={{ paddingLeft: indent }} className="px-2">
-          <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded shadow-lg">
+          <div className="bg-white dark:bg-void-100 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg">
             <TreeNodeEditor
               node={node}
               isAdd
@@ -251,39 +251,39 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
   // Determine background style
   const getBgClass = () => {
     if (isCurrentMatch) {
-      return 'bg-orange-200 dark:bg-orange-700/50 ring-2 ring-orange-400 dark:ring-orange-500'
+      return 'bg-amber-100 dark:bg-amber-900/30 ring-1 ring-amber-400/50 dark:ring-amber-500/30'
     }
     if (node.highlighted) {
-      return 'bg-yellow-100 dark:bg-yellow-900/30'
+      return 'bg-amber-50/80 dark:bg-amber-900/20'
     }
-    return 'hover:bg-gray-100 dark:hover:bg-gray-800'
+    return 'hover:bg-slate-100/80 dark:hover:bg-slate-800/40'
   }
 
   return (
     <div
       style={style}
       data-node-id={node.id}
-      className={`flex items-center px-2 group ${getBgClass()}`}
+      className={`flex items-center px-3 group transition-colors duration-100 ${getBgClass()}`}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
       <div style={{ width: indent, flexShrink: 0 }} />
 
-      {/* Expand/collapse toggle — select-none so dragging here won't select text */}
+      {/* Expand/collapse toggle */}
       {node.hasChildren ? (
         <span
-          className="w-4 h-4 flex items-center justify-center text-gray-400 flex-shrink-0 cursor-pointer select-none"
+          className="w-5 h-5 flex items-center justify-center text-slate-400 dark:text-slate-500 flex-shrink-0 cursor-pointer select-none hover:text-accent transition-colors rounded"
           onClick={() => onToggle(node.id)}
         >
           {node.expanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
         </span>
       ) : (
-        <span className="w-4 flex-shrink-0" />
+        <span className="w-5 flex-shrink-0" />
       )}
 
-      {/* Key — selectable, double-click to copy full key */}
+      {/* Key */}
       <span
-        className="relative text-xs font-medium text-purple-600 dark:text-purple-400 mr-1 truncate max-w-[200px] cursor-text select-text"
+        className="relative text-xs font-semibold text-violet-600 dark:text-violet-400 mr-1.5 truncate max-w-[180px] cursor-text select-text font-mono"
         onDoubleClick={isRoot ? undefined : handleCopyKey}
         title={isRoot ? undefined : `双击复制 key`}
       >
@@ -297,9 +297,9 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
         <CopiedTip show={copiedKey} />
       </span>
 
-      {!isRoot && <span className="text-gray-400 text-xs mr-1 select-none">:</span>}
+      {!isRoot && <span className="text-slate-300 dark:text-slate-600 text-xs mr-1.5 select-none">:</span>}
 
-      {/* Value — selectable, click to show popover for long values, double-click to copy */}
+      {/* Value */}
       <span
         ref={valueRef}
         className="relative truncate flex-1 cursor-pointer select-text"
@@ -334,9 +334,9 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
 
       {/* Action buttons */}
       {hovered && (
-        <div className="flex items-center gap-0.5 ml-auto flex-shrink-0 select-none" onClick={(e) => e.stopPropagation()}>
+        <div className="flex items-center gap-0.5 ml-auto flex-shrink-0 select-none opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
           <button
-            className="p-0.5 text-gray-400 hover:text-blue-500 rounded"
+            className="p-1 text-slate-400 hover:text-accent hover:bg-accent/10 rounded transition-colors"
             title="编辑"
             onClick={handleEditClick}
           >
@@ -344,7 +344,7 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
           </button>
           {(node.type === 'object' || node.type === 'array') && (
             <button
-              className="p-0.5 text-gray-400 hover:text-green-500 rounded"
+              className="p-1 text-slate-400 hover:text-emerald-500 hover:bg-emerald-500/10 rounded transition-colors"
               title="添加子节点"
               onClick={() => setAdding(true)}
             >
@@ -352,21 +352,21 @@ export const TreeNodeComponent = memo(function TreeNodeComponent({
             </button>
           )}
           <button
-            className="p-0.5 text-gray-400 hover:text-red-500 rounded"
+            className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-500/10 rounded transition-colors"
             title="删除"
             onClick={() => onDelete(node.id)}
           >
             <Trash2 size={12} />
           </button>
           <button
-            className="p-0.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded"
+            className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-500/10 rounded transition-colors"
             title="复制路径"
             onClick={() => copyToClipboard(node.path)}
           >
             <Copy size={12} />
           </button>
           <button
-            className="p-0.5 text-gray-400 hover:text-cyan-500 rounded"
+            className="p-1 text-slate-400 hover:text-cyan-500 hover:bg-cyan-500/10 rounded transition-colors"
             title="复制 key:value"
             onClick={() => {
               const val = node.type === 'object' || node.type === 'array'

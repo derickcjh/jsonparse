@@ -4,7 +4,7 @@ import { useJsonWorker } from '../../hooks/useJsonWorker'
 import { useStore } from '../../store'
 import { TreeNodeComponent } from './TreeNode'
 import { updateNodeInTree, addNodeToTree, addJsonToTree, deleteNodeFromTree, treeToJson } from '../../utils/treeHelpers'
-import { ChevronsDown, ChevronsUp } from 'lucide-react'
+import { ChevronsDown, ChevronsUp, TreeDeciduous } from 'lucide-react'
 import { IconButton } from '../common/IconButton'
 import type { TreeNode } from '../../store/types'
 
@@ -166,11 +166,15 @@ export function TreeView({ onTreeChange }: TreeViewProps): JSX.Element {
   if (!parsedTree) {
     return (
       <div className="flex-1 flex flex-col min-h-0">
-        <div className="flex items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-          <span className="text-xs text-gray-500 dark:text-gray-400 mr-auto">树形视图</span>
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200/60 dark:border-slate-700/40 bg-slate-50/80 dark:bg-void-100/80 flex-shrink-0">
+          <TreeDeciduous size={14} className="text-slate-400 dark:text-slate-500" />
+          <span className="text-xs font-medium text-slate-500 dark:text-slate-400">树形视图</span>
         </div>
-        <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
-          输入有效的 JSON 以查看树形视图
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 gap-3">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800/50 flex items-center justify-center">
+            <TreeDeciduous size={28} className="text-slate-300 dark:text-slate-600" />
+          </div>
+          <p className="text-sm">输入有效的 JSON 以查看树形视图</p>
         </div>
       </div>
     )
@@ -182,8 +186,9 @@ export function TreeView({ onTreeChange }: TreeViewProps): JSX.Element {
 
   return (
     <div className="flex-1 flex flex-col min-h-0">
-      <div className="flex items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 flex-shrink-0">
-        <span className="text-xs text-gray-500 dark:text-gray-400 mr-auto">树形视图</span>
+      <div className="flex items-center gap-2 px-3 py-2 border-b border-slate-200/60 dark:border-slate-700/40 bg-slate-50/80 dark:bg-void-100/80 flex-shrink-0">
+        <TreeDeciduous size={14} className="text-slate-400 dark:text-slate-500" />
+        <span className="text-xs font-medium text-slate-500 dark:text-slate-400 mr-auto">树形视图</span>
         <IconButton icon={<ChevronsDown size={14} />} label="展开全部" onClick={expandAll} />
         <IconButton icon={<ChevronsUp size={14} />} label="折叠全部" onClick={collapseAll} />
       </div>
